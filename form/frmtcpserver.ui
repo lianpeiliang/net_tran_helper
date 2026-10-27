@@ -92,7 +92,7 @@
       <item>
        <widget class="QCheckBox" name="ckAutoSend">
         <property name="text">
-         <string>定时发送</string>
+         <string>定时发送(ms)</string>
         </property>
        </widget>
       </item>
