@@ -28,3 +28,7 @@ qrc_*.cpp
 .DS_Store
 Thumbs.db
 
+# Local device/protocol sample data (not published)
+/file/device.txt
+/file/send.txt
+/readme.txt
