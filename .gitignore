@@ -1,0 +1,34 @@
+# Qt Creator user settings
+*.pro.user
+*.pro.user.*
+*.pri.user
+
+# Build output
+build/
+build-*/
+debug/
+release/
+bin/
+obj/
+Makefile
+Makefile.*
+.qmake.stash
+.qmake.cache
+*.o
+*.obj
+*.exe
+*.pdb
+*.ilk
+moc_*.cpp
+ui_*.h
+qrc_*.cpp
+
+# Editor and operating system files
+.vs/
+.DS_Store
+Thumbs.db
+
+# Local device/protocol sample data (not published)
+/file/device.txt
+/file/send.txt
+/readme.txt
