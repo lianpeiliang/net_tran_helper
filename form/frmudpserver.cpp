@@ -17,6 +17,10 @@ frmUdpServer::~frmUdpServer()
 
 void frmUdpServer::initForm()
 {
+    receivedBytes = 0;
+    sentBytes = 0;
+    updateByteCounts();
+
     udpSocket = new QUdpSocket(this);
     connect(udpSocket, SIGNAL(readyRead()), this, SLOT(readData()));
 
@@ -171,7 +175,13 @@ void frmUdpServer::readData()
 
     while (udpSocket->hasPendingDatagrams()) {
         data.resize(udpSocket->pendingDatagramSize());
-        udpSocket->readDatagram(data.data(), data.size(), &host, &port);
+        const qint64 bytesRead = udpSocket->readDatagram(data.data(), data.size(), &host, &port);
+        if (bytesRead < 0) {
+            break;
+        }
+        data.resize(static_cast<int>(bytesRead));
+        receivedBytes += static_cast<quint64>(bytesRead);
+        updateByteCounts();
 
         if (App::HexReceiveUdpServer) {
             buffer = QUIHelper::byteArrayToHexStr(data);
@@ -214,7 +224,12 @@ void frmUdpServer::sendData(const QString &ip, int port, const QString &data)
         buffer = data.toLatin1();
     }
 
-    udpSocket->writeDatagram(buffer, QHostAddress(ip), port);
+    const qint64 bytesWritten = udpSocket->writeDatagram(buffer, QHostAddress(ip), port);
+    if (bytesWritten < 0) {
+        return;
+    }
+    sentBytes += static_cast<quint64>(bytesWritten);
+    updateByteCounts();
 
     QString str = QString("[%1:%2] %3").arg(ip).arg(port).arg(data);
     append(0, str);
@@ -247,6 +262,19 @@ void frmUdpServer::on_btnListen_clicked()
         udpSocket->abort();
         ui->btnListen->setText("监听");
     }
+}
+
+void frmUdpServer::updateByteCounts()
+{
+    ui->labReceivedBytes->setText(tr("接收：%1 字节").arg(receivedBytes));
+    ui->labSentBytes->setText(tr("发送：%1 字节").arg(sentBytes));
+}
+
+void frmUdpServer::on_btnResetCounts_clicked()
+{
+    receivedBytes = 0;
+    sentBytes = 0;
+    updateByteCounts();
 }
 
 void frmUdpServer::on_btnSave_clicked()

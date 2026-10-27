@@ -21,6 +21,10 @@ private:
 
     QUdpSocket *udpSocket;
     QTimer *timer;
+    quint64 receivedBytes;
+    quint64 sentBytes;
+
+    void updateByteCounts();
 
 private slots:
     void initForm();
@@ -39,6 +43,7 @@ private slots:
     void on_btnSave_clicked();
     void on_btnClear_clicked();
     void on_btnSend_clicked();
+    void on_btnResetCounts_clicked();
 };
 
 #endif // FRMUDPSERVER_H
