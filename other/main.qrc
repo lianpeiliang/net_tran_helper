@@ -3,5 +3,8 @@
         <file>main.ico</file>
         <file>qt_zh_CN.qm</file>
         <file>widgets.qm</file>
+        <file>通信.ico</file>
+        <file>通信2.ico</file>
+        <file>通信3.ico</file>
     </qresource>
 </RCC>

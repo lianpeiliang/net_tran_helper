@@ -4,7 +4,7 @@
 int main(int argc, char *argv[])
 {
     QApplication a(argc, argv);
-    a.setWindowIcon(QIcon(":/main.ico"));
+    a.setWindowIcon(QIcon(":/通信.ico"));
 
     QFont font;
     font.setFamily(QUIConfig::FontName);
