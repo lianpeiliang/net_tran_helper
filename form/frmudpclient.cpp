@@ -28,17 +28,29 @@ void frmUdpClient::initForm()
     ui->cboxLocalIP->addItem(tr("自动选择"), QString());
     QStringList addresses;
     foreach (const QNetworkInterface &iface, QNetworkInterface::allInterfaces()) {
-        if (!(iface.flags() & QNetworkInterface::IsUp)) {
+        // Keep the address list consistent with the UDP server's listen addresses.
+        const QString name = iface.humanReadableName().toLower();
+        if (name.startsWith("vmware network adapter") || name.startsWith("npcap loopback adapter")) {
+            continue;
+        }
+        const QNetworkInterface::InterfaceFlags required = QNetworkInterface::IsUp |
+                QNetworkInterface::IsRunning | QNetworkInterface::CanBroadcast |
+                QNetworkInterface::CanMulticast;
+        if (iface.flags() != required) {
             continue;
         }
         foreach (const QNetworkAddressEntry &entry, iface.addressEntries()) {
+            if (entry.ip().protocol() != QAbstractSocket::IPv4Protocol) {
+                continue;
+            }
             const QString address = entry.ip().toString();
-            if (!addresses.contains(address)) {
+            if (address != "127.0.0.1" && !addresses.contains(address)) {
                 addresses.append(address);
-                ui->cboxLocalIP->addItem(address + " (" + iface.humanReadableName() + ")", address);
+                ui->cboxLocalIP->addItem(address, address);
             }
         }
     }
+    ui->cboxLocalIP->addItem("127.0.0.1", "127.0.0.1");
     ui->cboxLocalIP->blockSignals(false);
 
     timer = new QTimer(this);
