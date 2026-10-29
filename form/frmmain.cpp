@@ -5,7 +5,37 @@
 frmMain::frmMain(QWidget *parent) : QWidget(parent), ui(new Ui::frmMain)
 {
     ui->setupUi(this);
-    ui->labLocalIP->setText(tr("本机 IP：%1").arg(QUIHelper::getLocalIP()));
+    QStringList ips;
+    foreach (const QNetworkInterface &iface, QNetworkInterface::allInterfaces()) {
+        const QString name = iface.humanReadableName().toLower();
+        if (name.startsWith("vmware network adapter") || name.startsWith("npcap loopback adapter")) {
+            continue;
+        }
+        const QNetworkInterface::InterfaceFlags required = QNetworkInterface::IsUp |
+                QNetworkInterface::IsRunning | QNetworkInterface::CanBroadcast |
+                QNetworkInterface::CanMulticast;
+        if (iface.flags() != required) {
+            continue;
+        }
+        foreach (const QNetworkAddressEntry &entry, iface.addressEntries()) {
+            const QString ip = entry.ip().toString();
+            if (entry.ip().protocol() == QAbstractSocket::IPv4Protocol &&
+                    ip != "127.0.0.1" && !ips.contains(ip)) {
+                ips.append(ip);
+            }
+        }
+    }
+    ips.append("127.0.0.1");
+    QFont addressFont = QFontDatabase::systemFont(QFontDatabase::FixedFont);
+    addressFont.setPointSizeF(ui->labLocalIP->font().pointSizeF());
+    ui->labLocalIP->setFont(addressFont);
+    QStringList columns;
+    foreach (const QString &ip, ips) {
+        // IPv4 addresses use at most 15 characters; reserve three more for spacing.
+        columns.append(ip.leftJustified(18, QLatin1Char(' ')));
+    }
+    ui->labLocalIP->setTextFormat(Qt::PlainText);
+    ui->labLocalIP->setText(tr("本机 IP：%1").arg(columns.join("").trimmed()));
     ui->tabWidget->setCurrentIndex(App::CurrentIndex);
 }
 
