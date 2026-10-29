@@ -5,6 +5,12 @@
 frmMain::frmMain(QWidget *parent) : QWidget(parent), ui(new Ui::frmMain)
 {
     ui->setupUi(this);
+    QSettings settings(App::ConfigFile, QSettings::IniFormat);
+    const int themeIndex = settings.value("Appearance/Theme", "blue").toString() == "dark" ? 1 : 0;
+    ui->cboxTheme->blockSignals(true);
+    ui->cboxTheme->setCurrentIndex(themeIndex);
+    ui->cboxTheme->blockSignals(false);
+    on_cboxTheme_currentIndexChanged(themeIndex);
     QStringList ips;
     foreach (const QNetworkInterface &iface, QNetworkInterface::allInterfaces()) {
         const QString name = iface.humanReadableName().toLower();
@@ -44,6 +50,17 @@ frmMain::frmMain(QWidget *parent) : QWidget(parent), ui(new Ui::frmMain)
 frmMain::~frmMain()
 {
     delete ui;
+}
+
+void frmMain::on_cboxTheme_currentIndexChanged(int index)
+{
+    const QString name = index == 1 ? "dark" : "blue";
+    QFile theme(QString(":/%1.qss").arg(name));
+    if (theme.open(QFile::ReadOnly)) {
+        qApp->setStyleSheet(QString::fromUtf8(theme.readAll()));
+        QSettings settings(App::ConfigFile, QSettings::IniFormat);
+        settings.setValue("Appearance/Theme", name);
+    }
 }
 
 void frmMain::on_tabWidget_currentChanged(int index)
