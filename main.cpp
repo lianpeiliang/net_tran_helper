@@ -4,6 +4,11 @@
 int main(int argc, char *argv[])
 {
     QApplication a(argc, argv);
+    a.setStyle("Fusion");
+    QFile theme(":/blue.qss");
+    if (theme.open(QFile::ReadOnly)) {
+        a.setStyleSheet(QString::fromUtf8(theme.readAll()));
+    }
     a.setWindowIcon(QIcon(":/通信.ico"));
 
     QFont font;

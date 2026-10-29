@@ -29,7 +29,6 @@ void frmTcpServer::initForm()
 
     ui->cboxInterval->addItems(App::Intervals);
     ui->cboxData->addItems(App::Datas);
-    QUIHelper::setLabStyle(ui->labCount, 3);
 }
 
 void frmTcpServer::initIP()

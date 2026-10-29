@@ -1,10 +1,14 @@
 <RCC>
     <qresource prefix="/">
+        <file>blue.qss</file>
+        <file>check.svg</file>
+        <file>down.svg</file>
+        <file>up.svg</file>
         <file>main.ico</file>
         <file>qt_zh_CN.qm</file>
         <file>widgets.qm</file>
-        <file>通信.ico</file>
-        <file>通信2.ico</file>
-        <file>通信3.ico</file>
+        <file alias="通信.ico">signal.ico</file>
+        <file alias="通信2.ico">signal2.ico</file>
+        <file alias="通信3.ico">signal3.ico</file>
     </qresource>
 </RCC>
