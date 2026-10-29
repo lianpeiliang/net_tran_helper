@@ -32,7 +32,7 @@
       <string notr="true"/>
      </property>
      <property name="tabPosition">
-      <enum>QTabWidget::South</enum>
+      <enum>QTabWidget::North</enum>
      </property>
      <property name="currentIndex">
       <number>0</number>
@@ -61,17 +61,17 @@
    </item>
    <item>
     <widget class="QLabel" name="labLocalIP">
-     <property name="wordWrap">
-      <bool>true</bool>
+     <property name="toolTip">
+      <string>本机地址信息，仅供参考；实际收发地址以各页面的绑定设置为准。</string>
      </property>
      <property name="text">
       <string>本机 IP：</string>
      </property>
+     <property name="wordWrap">
+      <bool>true</bool>
+     </property>
      <property name="margin">
       <number>6</number>
-     </property>
-     <property name="toolTip">
-      <string>本机地址信息，仅供参考；实际收发地址以各页面的绑定设置为准。</string>
      </property>
      <property name="textInteractionFlags">
       <set>Qt::TextSelectableByMouse</set>
@@ -82,15 +82,36 @@
     <layout class="QHBoxLayout" name="themeLayout">
      <item>
       <spacer name="themeSpacer">
-       <property name="orientation"><enum>Qt::Horizontal</enum></property>
-       <property name="sizeHint" stdset="0"><size><width>40</width><height>20</height></size></property>
+       <property name="orientation">
+        <enum>Qt::Horizontal</enum>
+       </property>
+       <property name="sizeHint" stdset="0">
+        <size>
+         <width>40</width>
+         <height>20</height>
+        </size>
+       </property>
       </spacer>
      </item>
-     <item><widget class="QLabel" name="labTheme"><property name="text"><string>主题</string></property></widget></item>
+     <item>
+      <widget class="QLabel" name="labTheme">
+       <property name="text">
+        <string>主题</string>
+       </property>
+      </widget>
+     </item>
      <item>
       <widget class="QComboBox" name="cboxTheme">
-       <item><property name="text"><string>晴空蓝</string></property></item>
-       <item><property name="text"><string>暗夜炫蓝</string></property></item>
+       <item>
+        <property name="text">
+         <string>晴空蓝</string>
+        </property>
+       </item>
+       <item>
+        <property name="text">
+         <string>暗夜炫蓝</string>
+        </property>
+       </item>
       </widget>
      </item>
     </layout>
