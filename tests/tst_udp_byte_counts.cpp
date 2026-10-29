@@ -173,6 +173,43 @@ private slots:
         QVERIFY(!peer.hasPendingDatagrams());
     }
 
+    void clientLocalPort()
+    {
+        QTemporaryDir settings;
+        App::ConfigFile = settings.filePath("test.ini");
+        frmUdpClient client;
+        QUdpSocket peer, reservation;
+        QVERIFY(peer.bind(QHostAddress(QHostAddress::LocalHost), 0, QUdpSocket::DontShareAddress));
+        QVERIFY(reservation.bind(QHostAddress(QHostAddress::LocalHost), 0, QUdpSocket::DontShareAddress));
+        const quint16 fixedPort = reservation.localPort();
+        reservation.close();
+        QSpinBox *portInput = client.findChild<QSpinBox *>("spinLocalPort");
+        QCOMPARE(portInput->value(), 0);
+        QCOMPARE(portInput->maximum(), 65535);
+        portInput->setValue(fixedPort);
+        for (int i = 0; i < 2; ++i) {
+            QVERIFY(send(&client, "127.0.0.1", peer.localPort(), "abc"));
+            QTRY_VERIFY(peer.hasPendingDatagrams());
+            QByteArray payload(3, '\0');
+            QHostAddress source;
+            quint16 sourcePort = 0;
+            QCOMPARE(peer.readDatagram(payload.data(), payload.size(), &source, &sourcePort), qint64(3));
+            QCOMPARE(sourcePort, fixedPort);
+            QCOMPARE(peer.writeDatagram("ok", source, sourcePort), qint64(2));
+            QTRY_COMPARE(count(&client, "labReceivedBytes"), quint64((i + 1) * 2));
+        }
+        portInput->setValue(peer.localPort()); // Occupied port must not silently fall back.
+        QVERIFY(send(&client, "127.0.0.1", peer.localPort(), "abc"));
+        QVERIFY(!client.findChild<QLabel *>("labSendHint")->isHidden());
+        QCOMPARE(count(&client, "labSentBytes"), quint64(6));
+        QVERIFY(!peer.hasPendingDatagrams());
+        portInput->setValue(0);
+        QVERIFY(send(&client, "127.0.0.1", peer.localPort(), "abc"));
+        QTRY_VERIFY(peer.hasPendingDatagrams());
+        QCOMPARE(count(&client, "labSentBytes"), quint64(9));
+        QVERIFY(client.findChild<QLabel *>("labSendHint")->isHidden());
+    }
+
     void serverMissingTarget()
     {
         QTemporaryDir settings;

@@ -43,6 +43,7 @@ private slots:
     void on_btnSend_clicked();
     void on_btnResetCounts_clicked();
     void on_cboxLocalIP_currentIndexChanged(int index);
+    void on_spinLocalPort_valueChanged(int port);
 };
 
 #endif // FRMUDPCLIENT_H

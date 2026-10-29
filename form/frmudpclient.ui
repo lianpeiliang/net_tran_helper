@@ -97,7 +97,27 @@
       <item>
        <widget class="QComboBox" name="cboxLocalIP">
         <property name="toolTip">
-         <string>自动选择时按目标路由选择源地址；指定 IP 时绑定该地址。切换后本地端口重新分配。</string>
+         <string>自动选择时按目标路由选择源地址；指定 IP 时绑定该地址。切换后按本地端口设置重新绑定。</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QLabel" name="labLocalPort">
+        <property name="text">
+         <string>本地端口（0 为自动分配）</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QSpinBox" name="spinLocalPort">
+        <property name="maximum">
+         <number>65535</number>
+        </property>
+        <property name="keyboardTracking">
+         <bool>false</bool>
+        </property>
+        <property name="toolTip">
+         <string>发送和接收回复使用的本地端口。0 表示自动分配；修改后下次发送时重新绑定。</string>
         </property>
        </widget>
       </item>

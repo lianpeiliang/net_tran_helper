@@ -234,14 +234,21 @@ void frmUdpClient::on_cboxLocalIP_currentIndexChanged(int index)
 {
     Q_UNUSED(index);
     udpSocket->abort();
-    ui->labLocalEndpoint->setText(tr("本地地址：待发送（切换地址后端口将重新分配）"));
+    ui->labLocalEndpoint->setText(tr("本地地址：待发送（下次发送时重新绑定）"));
     ui->labSendHint->hide();
+}
+
+void frmUdpClient::on_spinLocalPort_valueChanged(int port)
+{
+    Q_UNUSED(port);
+    on_cboxLocalIP_currentIndexChanged(ui->cboxLocalIP->currentIndex());
 }
 
 bool frmUdpClient::prepareLocalAddress(const QHostAddress &destination, int port)
 {
     QString error;
     QHostAddress local;
+    const quint16 localPort = static_cast<quint16>(ui->spinLocalPort->value());
     const QString selected = ui->cboxLocalIP->itemData(ui->cboxLocalIP->currentIndex()).toString();
     if (destination.isNull() || port <= 0 || port > 65535) {
         error = tr("请输入有效的远程 IP 和端口（1-65535）。");
@@ -266,11 +273,13 @@ bool frmUdpClient::prepareLocalAddress(const QHostAddress &destination, int port
         }
     }
     if (error.isEmpty() && (udpSocket->state() != QAbstractSocket::BoundState ||
-                           udpSocket->localAddress() != local)) {
+                           udpSocket->localAddress() != local ||
+                           (localPort != 0 && udpSocket->localPort() != localPort))) {
         udpSocket->abort();
         ui->labLocalEndpoint->setText(tr("本地地址：尚未绑定"));
-        if (!udpSocket->bind(local, 0)) {
-            error = tr("无法绑定本地 IP %1：%2").arg(local.toString()).arg(udpSocket->errorString());
+        if (!udpSocket->bind(local, localPort, QAbstractSocket::DontShareAddress)) {
+            error = tr("无法绑定本地地址 [%1]:%2：%3").arg(local.toString())
+                    .arg(localPort).arg(udpSocket->errorString());
         }
     }
     if (!error.isEmpty()) {
