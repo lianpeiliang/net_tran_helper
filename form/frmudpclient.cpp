@@ -19,9 +19,27 @@ void frmUdpClient::initForm()
     receivedBytes = 0;
     sentBytes = 0;
     updateByteCounts();
+    ui->labSendHint->hide();
 
     udpSocket = new QUdpSocket(this);
     connect(udpSocket, SIGNAL(readyRead()), this, SLOT(readData()));
+
+    ui->cboxLocalIP->blockSignals(true);
+    ui->cboxLocalIP->addItem(tr("自动选择"), QString());
+    QStringList addresses;
+    foreach (const QNetworkInterface &iface, QNetworkInterface::allInterfaces()) {
+        if (!(iface.flags() & QNetworkInterface::IsUp)) {
+            continue;
+        }
+        foreach (const QNetworkAddressEntry &entry, iface.addressEntries()) {
+            const QString address = entry.ip().toString();
+            if (!addresses.contains(address)) {
+                addresses.append(address);
+                ui->cboxLocalIP->addItem(address + " (" + iface.humanReadableName() + ")", address);
+            }
+        }
+    }
+    ui->cboxLocalIP->blockSignals(false);
 
     timer = new QTimer(this);
     connect(timer, SIGNAL(timeout()), this, SLOT(on_btnSend_clicked()));
@@ -178,22 +196,89 @@ void frmUdpClient::sendData(const QString &ip, int port, const QString &data)
 {
     QByteArray buffer;
     if (App::HexSendUdpClient) {
-        buffer = QUIHelper::hexStrToByteArray(data);
+        QString error;
+        if (!QUIHelper::parseHexData(data, buffer, error)) {
+            ui->labSendHint->setText(error);
+            ui->labSendHint->show();
+            return;
+        }
     } else if (App::AsciiUdpClient) {
         buffer = QUIHelper::asciiStrToByteArray(data);
     } else {
         buffer = data.toLatin1();
     }
 
-    const qint64 bytesWritten = udpSocket->writeDatagram(buffer, QHostAddress(ip), port);
-    if (bytesWritten < 0) {
+    const QHostAddress destination(ip);
+    if (!prepareLocalAddress(destination, port)) {
         return;
     }
+    ui->labSendHint->hide();
+    const qint64 bytesWritten = udpSocket->writeDatagram(buffer, destination, port);
+    if (bytesWritten < 0) {
+        ui->labSendHint->setText(tr("发送失败：%1").arg(udpSocket->errorString()));
+        ui->labSendHint->show();
+        return;
+    }
+    ui->labLocalEndpoint->setText(tr("本地地址：[%1]:%2")
+                                 .arg(udpSocket->localAddress().toString()).arg(udpSocket->localPort()));
     sentBytes += static_cast<quint64>(bytesWritten);
     updateByteCounts();
 
-    QString str = QString("[%1:%2] %3").arg(ip).arg(port).arg(data);
+    const QString sentData = App::HexSendUdpClient
+            ? QUIHelper::byteArrayToHexStr(buffer) : data;
+    QString str = QString("[%1:%2] %3").arg(ip).arg(port).arg(sentData);
     append(0, str);
+}
+
+void frmUdpClient::on_cboxLocalIP_currentIndexChanged(int index)
+{
+    Q_UNUSED(index);
+    udpSocket->abort();
+    ui->labLocalEndpoint->setText(tr("本地地址：待发送（切换地址后端口将重新分配）"));
+    ui->labSendHint->hide();
+}
+
+bool frmUdpClient::prepareLocalAddress(const QHostAddress &destination, int port)
+{
+    QString error;
+    QHostAddress local;
+    const QString selected = ui->cboxLocalIP->itemData(ui->cboxLocalIP->currentIndex()).toString();
+    if (destination.isNull() || port <= 0 || port > 65535) {
+        error = tr("请输入有效的远程 IP 和端口（1-65535）。");
+    } else if (selected.isEmpty()) {
+        // UDP connect selects a route without transmitting a datagram.
+        // Bind the sending socket to that source so its displayed address is exact.
+        QUdpSocket route;
+        route.connectToHost(destination, port);
+        if (route.state() != QAbstractSocket::ConnectedState && !route.waitForConnected(1000)) {
+            error = tr("无法自动选择本地地址：%1").arg(route.errorString());
+        } else {
+            local = route.localAddress();
+            if (local.isNull() || local == QHostAddress::Any ||
+                    local == QHostAddress::AnyIPv4 || local == QHostAddress::AnyIPv6) {
+                error = tr("无法确定本地地址，请手动选择本地 IP。");
+            }
+        }
+    } else {
+        local = QHostAddress(selected);
+        if (local.protocol() != destination.protocol()) {
+            error = tr("本地 IP 与远程 IP 必须使用相同的 IPv4/IPv6 协议。");
+        }
+    }
+    if (error.isEmpty() && (udpSocket->state() != QAbstractSocket::BoundState ||
+                           udpSocket->localAddress() != local)) {
+        udpSocket->abort();
+        ui->labLocalEndpoint->setText(tr("本地地址：尚未绑定"));
+        if (!udpSocket->bind(local, 0)) {
+            error = tr("无法绑定本地 IP %1：%2").arg(local.toString()).arg(udpSocket->errorString());
+        }
+    }
+    if (!error.isEmpty()) {
+        ui->labSendHint->setText(error);
+        ui->labSendHint->show();
+        return false;
+    }
+    return true;
 }
 
 void frmUdpClient::updateByteCounts()

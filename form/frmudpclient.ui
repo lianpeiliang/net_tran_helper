@@ -25,13 +25,13 @@
     <widget class="QFrame" name="frame">
      <property name="minimumSize">
       <size>
-       <width>170</width>
+       <width>300</width>
        <height>0</height>
       </size>
      </property>
      <property name="maximumSize">
       <size>
-       <width>170</width>
+       <width>300</width>
        <height>16777215</height>
       </size>
      </property>
@@ -86,6 +86,20 @@
       </item>
       <item>
        <widget class="QComboBox" name="cboxInterval"/>
+      </item>
+      <item>
+       <widget class="QLabel" name="labLocalIP">
+        <property name="text">
+         <string>本地 IP</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QComboBox" name="cboxLocalIP">
+        <property name="toolTip">
+         <string>自动选择时按目标路由选择源地址；指定 IP 时绑定该地址。切换后本地端口重新分配。</string>
+        </property>
+       </widget>
       </item>
       <item>
        <widget class="QLabel" name="labServerIP">
@@ -224,6 +238,29 @@
       </widget>
      </item>
     </layout>
+   </item>
+   <item row="3" column="0" colspan="2">
+    <widget class="QLabel" name="labSendHint">
+     <property name="text">
+      <string/>
+     </property>
+     <property name="wordWrap">
+      <bool>true</bool>
+     </property>
+     <property name="styleSheet">
+      <string notr="true">color: #a63b00;</string>
+     </property>
+    </widget>
+   </item>
+   <item row="4" column="0" colspan="2">
+    <widget class="QLabel" name="labLocalEndpoint">
+     <property name="text">
+      <string>本地地址：待发送</string>
+     </property>
+     <property name="wordWrap">
+      <bool>true</bool>
+     </property>
+    </widget>
    </item>
   </layout>
  </widget>

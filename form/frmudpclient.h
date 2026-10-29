@@ -25,6 +25,7 @@ private:
     quint64 sentBytes;
 
     void updateByteCounts();
+    bool prepareLocalAddress(const QHostAddress &destination, int port);
 
 private slots:
     void initForm();
@@ -41,6 +42,7 @@ private slots:
     void on_btnClear_clicked();
     void on_btnSend_clicked();
     void on_btnResetCounts_clicked();
+    void on_cboxLocalIP_currentIndexChanged(int index);
 };
 
 #endif // FRMUDPCLIENT_H

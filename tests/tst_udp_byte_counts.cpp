@@ -88,6 +88,91 @@ private slots:
         QTRY_COMPARE(count(widget.data(), "labReceivedBytes"), quint64(1));
     }
 
+    void hexValidation_data()
+    {
+        counters_data();
+    }
+
+    void hexValidation()
+    {
+        QFETCH(bool, server);
+        QTemporaryDir settings;
+        App::ConfigFile = settings.filePath("test.ini");
+        QScopedPointer<QWidget> widget(server ? static_cast<QWidget *>(new frmUdpServer)
+                                              : static_cast<QWidget *>(new frmUdpClient));
+        QUdpSocket peer;
+        QVERIFY(peer.bind(QHostAddress(QHostAddress::LocalHost), 0));
+        widget->findChild<QCheckBox *>("ckHexSend")->setChecked(true);
+        widget->findChild<QCheckBox *>("ckShow")->setChecked(true);
+        QLabel *hint = widget->findChild<QLabel *>("labSendHint");
+        const QStringList invalid = QStringList() << "123" << "0x123" << "12GG"
+                << "12 3" << "12,34" << "  \t " << "";
+        foreach (const QString &input, invalid) {
+            QVERIFY(send(widget.data(), "127.0.0.1", peer.localPort(), input));
+            QVERIFY(!hint->isHidden());
+            QVERIFY(!hint->text().isEmpty());
+            QCOMPARE(count(widget.data(), "labSentBytes"), quint64(0));
+        }
+        QTest::qWait(30);
+        QVERIFY(!peer.hasPendingDatagrams());
+        QVERIFY(widget->findChild<QTextEdit *>("txtMain")->toPlainText().isEmpty());
+
+        widget->findChild<QCheckBox *>("ckShow")->setChecked(false);
+        const QStringList valid = QStringList() << "01 23" << "0123" << "01\t23\n";
+        quint64 total = 0;
+        foreach (const QString &input, valid) {
+            QVERIFY(send(widget.data(), "127.0.0.1", peer.localPort(), input));
+            QTRY_VERIFY(peer.hasPendingDatagrams());
+            QByteArray received(2, '\0');
+            QCOMPARE(peer.readDatagram(received.data(), received.size()), qint64(2));
+            QCOMPARE(received, QByteArray::fromHex("0123"));
+            total += 2;
+            QCOMPARE(count(widget.data(), "labSentBytes"), total);
+            QVERIFY(hint->isHidden());
+            QVERIFY(widget->findChild<QTextEdit *>("txtMain")->toPlainText().endsWith("01 23"));
+        }
+    }
+
+    void clientLocalAddress()
+    {
+        QTemporaryDir settings;
+        App::ConfigFile = settings.filePath("test.ini");
+        frmUdpClient client;
+        QUdpSocket peer;
+        QVERIFY(peer.bind(QHostAddress(QHostAddress::LocalHost), 0));
+        QComboBox *local = client.findChild<QComboBox *>("cboxLocalIP");
+        QLabel *endpoint = client.findChild<QLabel *>("labLocalEndpoint");
+        QLabel *hint = client.findChild<QLabel *>("labSendHint");
+        QCOMPARE(local->currentIndex(), 0);
+        const int loopback = local->findData("127.0.0.1");
+        QVERIFY(loopback > 0);
+        const QList<int> choices = QList<int>() << 0 << loopback << 0;
+        quint64 receivedTotal = 0;
+        foreach (int choice, choices) {
+            local->setCurrentIndex(choice);
+            QVERIFY(send(&client, "127.0.0.1", peer.localPort(), "abc"));
+            QTRY_VERIFY(peer.hasPendingDatagrams());
+            QHostAddress source;
+            quint16 port = 0;
+            QByteArray data(3, '\0');
+            QCOMPARE(peer.readDatagram(data.data(), data.size(), &source, &port), qint64(3));
+            QCOMPARE(source, QHostAddress(QHostAddress::LocalHost));
+            QVERIFY(port > 0);
+            QVERIFY(endpoint->text().contains(QString("[127.0.0.1]:%1").arg(port)));
+            QCOMPARE(peer.writeDatagram("ok", source, port), qint64(2));
+            receivedTotal += 2;
+            QTRY_COMPARE(count(&client, "labReceivedBytes"), receivedTotal);
+        }
+        QTRY_COMPARE(count(&client, "labReceivedBytes"), quint64(6));
+        QCOMPARE(count(&client, "labSentBytes"), quint64(9));
+        local->addItem("Unavailable test IP", "192.0.2.123");
+        local->setCurrentIndex(local->count() - 1);
+        QVERIFY(send(&client, "127.0.0.1", peer.localPort(), "abc"));
+        QVERIFY(!hint->isHidden());
+        QCOMPARE(count(&client, "labSentBytes"), quint64(9));
+        QVERIFY(!peer.hasPendingDatagrams());
+    }
+
     void serverMissingTarget()
     {
         QTemporaryDir settings;

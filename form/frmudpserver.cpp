@@ -219,13 +219,19 @@ void frmUdpServer::sendData(const QString &ip, int port, const QString &data)
 {
     QByteArray buffer;
     if (App::HexSendUdpServer) {
-        buffer = QUIHelper::hexStrToByteArray(data);
+        QString error;
+        if (!QUIHelper::parseHexData(data, buffer, error)) {
+            ui->labSendHint->setText(error);
+            ui->labSendHint->show();
+            return;
+        }
     } else if (App::AsciiUdpServer) {
         buffer = QUIHelper::asciiStrToByteArray(data);
     } else {
         buffer = data.toLatin1();
     }
 
+    ui->labSendHint->hide();
     const qint64 bytesWritten = udpSocket->writeDatagram(buffer, QHostAddress(ip), port);
     if (bytesWritten < 0) {
         return;
@@ -233,7 +239,9 @@ void frmUdpServer::sendData(const QString &ip, int port, const QString &data)
     sentBytes += static_cast<quint64>(bytesWritten);
     updateByteCounts();
 
-    QString str = QString("[%1:%2] %3").arg(ip).arg(port).arg(data);
+    const QString sentData = App::HexSendUdpServer
+            ? QUIHelper::byteArrayToHexStr(buffer) : data;
+    QString str = QString("[%1:%2] %3").arg(ip).arg(port).arg(sentData);
     append(0, str);
 }
 

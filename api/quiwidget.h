@@ -712,6 +712,7 @@ public:
 
     //16进制字符串转字节数组
     static QByteArray hexStrToByteArray(const QString &str);
+    static bool parseHexData(const QString &str, QByteArray &data, QString &error);
     static char convertHexChar(char ch);
 
     //Ascii字符串转字节数组

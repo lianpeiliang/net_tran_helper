@@ -2932,6 +2932,35 @@ QString QUIHelper::byteArrayToAsciiStr(const QByteArray &data)
     return temp.trimmed();
 }
 
+bool QUIHelper::parseHexData(const QString &str, QByteArray &data, QString &error)
+{
+    data.clear();
+    error.clear();
+    QString digits;
+    for (int i = 0; i < str.size(); ++i) {
+        const QChar ch = str.at(i);
+        if (ch.isSpace()) {
+            continue;
+        }
+        if (!((ch >= '0' && ch <= '9') || (ch >= 'a' && ch <= 'f') ||
+              (ch >= 'A' && ch <= 'F'))) {
+            error = QObject::tr("十六进制输入只能包含 0-9、A-F 和空白，不支持 0x 前缀。示例：01 23");
+            return false;
+        }
+        digits.append(ch);
+    }
+    if (digits.isEmpty()) {
+        error = QObject::tr("请输入要发送的十六进制数据。示例：01 23");
+        return false;
+    }
+    if (digits.size() % 2 != 0) {
+        error = QObject::tr("十六进制数据必须为偶数位，每两位表示一个字节。若要发送数值 0x123，请输入 01 23。");
+        return false;
+    }
+    data = QByteArray::fromHex(digits.toLatin1());
+    return true;
+}
+
 QByteArray QUIHelper::hexStrToByteArray(const QString &str)
 {
     QByteArray senddata;
