@@ -1,10 +1,12 @@
 ﻿#include "frmmain.h"
 #include "ui_frmmain.h"
 #include "quiwidget.h"
+#include "frmserial.h"
 
 frmMain::frmMain(QWidget *parent) : QWidget(parent), ui(new Ui::frmMain)
 {
     ui->setupUi(this);
+    ui->tabWidget->addTab(new frmSerial(this), tr("串口"));
     QSettings settings(App::ConfigFile, QSettings::IniFormat);
     const int themeIndex = settings.value("Appearance/Theme", "blue").toString() == "dark" ? 1 : 0;
     ui->cboxTheme->blockSignals(true);
@@ -44,7 +46,8 @@ frmMain::frmMain(QWidget *parent) : QWidget(parent), ui(new Ui::frmMain)
     ui->labLocalIP->setText(tr("本机 IP：%1").arg(columns.join("").trimmed()));
     // Stored indices retain the original TCP-first ordering for compatibility.
     const int savedIndex = App::CurrentIndex;
-    ui->tabWidget->setCurrentIndex(savedIndex >= 0 && savedIndex < 4 ? (savedIndex + 2) % 4 : 0);
+    ui->tabWidget->setCurrentIndex(savedIndex == 4 ? 4 :
+                                 (savedIndex >= 0 && savedIndex < 4 ? (savedIndex + 2) % 4 : 0));
 }
 
 frmMain::~frmMain()
@@ -65,6 +68,6 @@ void frmMain::on_cboxTheme_currentIndexChanged(int index)
 
 void frmMain::on_tabWidget_currentChanged(int index)
 {
-    App::CurrentIndex = (index + 2) % 4;
+    App::CurrentIndex = index == 4 ? 4 : (index + 2) % 4;
     App::writeConfig();
 }

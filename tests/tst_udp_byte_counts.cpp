@@ -224,7 +224,7 @@ private slots:
         listenIP->setCurrentIndex(selected);
         const QString localIP = listenIP->currentText();
         QUdpSocket reservation;
-        QVERIFY(reservation.bind(QHostAddress::AnyIPv4, 0));
+        QVERIFY(reservation.bind(QHostAddress(QHostAddress::AnyIPv4), 0));
         const quint16 port = reservation.localPort();
         reservation.close();
         server.findChild<QLineEdit *>("txtListenPort")->setText(QString::number(port));

@@ -6,6 +6,7 @@ FORMS += \
     $$PWD/frmudpserver.ui
 
 HEADERS += \
+    $$PWD/frmserial.h \
     $$PWD/frmmain.h \
     $$PWD/frmtcpclient.h \
     $$PWD/frmtcpserver.h \
@@ -13,6 +14,7 @@ HEADERS += \
     $$PWD/frmudpserver.h
 
 SOURCES += \
+    $$PWD/frmserial.cpp \
     $$PWD/frmmain.cpp \
     $$PWD/frmtcpclient.cpp \
     $$PWD/frmtcpserver.cpp \
