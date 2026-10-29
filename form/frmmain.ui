@@ -59,6 +59,22 @@
      </widget>
     </widget>
    </item>
+   <item>
+    <widget class="QLabel" name="labLocalIP">
+     <property name="text">
+      <string>本机 IP：</string>
+     </property>
+     <property name="margin">
+      <number>6</number>
+     </property>
+     <property name="toolTip">
+      <string>本机地址信息，仅供参考；实际收发地址以各页面的绑定设置为准。</string>
+     </property>
+     <property name="textInteractionFlags">
+      <set>Qt::TextSelectableByMouse</set>
+     </property>
+    </widget>
+   </item>
   </layout>
  </widget>
  <customwidgets>
