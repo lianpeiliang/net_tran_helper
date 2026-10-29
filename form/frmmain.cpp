@@ -36,7 +36,9 @@ frmMain::frmMain(QWidget *parent) : QWidget(parent), ui(new Ui::frmMain)
     }
     ui->labLocalIP->setTextFormat(Qt::PlainText);
     ui->labLocalIP->setText(tr("本机 IP：%1").arg(columns.join("").trimmed()));
-    ui->tabWidget->setCurrentIndex(App::CurrentIndex);
+    // Stored indices retain the original TCP-first ordering for compatibility.
+    const int savedIndex = App::CurrentIndex;
+    ui->tabWidget->setCurrentIndex(savedIndex >= 0 && savedIndex < 4 ? (savedIndex + 2) % 4 : 0);
 }
 
 frmMain::~frmMain()
@@ -46,6 +48,6 @@ frmMain::~frmMain()
 
 void frmMain::on_tabWidget_currentChanged(int index)
 {
-    App::CurrentIndex = index;
+    App::CurrentIndex = (index + 2) % 4;
     App::writeConfig();
 }

@@ -35,18 +35,8 @@
       <enum>QTabWidget::South</enum>
      </property>
      <property name="currentIndex">
-      <number>2</number>
+      <number>0</number>
      </property>
-     <widget class="frmTcpClient" name="tabTcpClient">
-      <attribute name="title">
-       <string>TCP客户端</string>
-      </attribute>
-     </widget>
-     <widget class="frmTcpServer" name="tabTcpServer">
-      <attribute name="title">
-       <string>TCP服务器</string>
-      </attribute>
-     </widget>
      <widget class="frmUdpClient" name="tabUdpClient">
       <attribute name="title">
        <string>UDP客户端</string>
@@ -55,6 +45,16 @@
      <widget class="frmUdpServer" name="tabUdpServer">
       <attribute name="title">
        <string>UDP服务器</string>
+      </attribute>
+     </widget>
+     <widget class="frmTcpClient" name="tabTcpClient">
+      <attribute name="title">
+       <string>TCP客户端</string>
+      </attribute>
+     </widget>
+     <widget class="frmTcpServer" name="tabTcpServer">
+      <attribute name="title">
+       <string>TCP服务器</string>
       </attribute>
      </widget>
     </widget>
