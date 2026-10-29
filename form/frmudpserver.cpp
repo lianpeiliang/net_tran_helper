@@ -21,6 +21,8 @@ void frmUdpServer::initForm()
     sentBytes = 0;
     updateByteCounts();
 
+    ui->labSendHint->hide();
+
     udpSocket = new QUdpSocket(this);
     connect(udpSocket, SIGNAL(readyRead()), this, SLOT(readData()));
 
@@ -301,8 +303,20 @@ void frmUdpServer::on_btnClear_clicked()
 
 void frmUdpServer::on_btnSend_clicked()
 {
+    QString hint;
+    if (ui->listWidget->count() == 0) {
+        hint = tr("暂无客户端，请先启动监听，并让 UDP 客户端向本机发送一条数据。");
+    } else if (!ui->ckSelectAll->isChecked() && ui->listWidget->selectedItems().isEmpty()) {
+        hint = tr("请选择右侧的客户端，或勾选“对所有客户端发送”。");
+    }
+
     QString data = ui->cboxData->currentText();
-    if (data.length() <= 0) {
+    if (hint.isEmpty() && data.isEmpty()) {
+        hint = tr("请输入要发送的数据。");
+    }
+    ui->labSendHint->setText(hint);
+    ui->labSendHint->setVisible(!hint.isEmpty());
+    if (!hint.isEmpty()) {
         return;
     }
 
@@ -313,7 +327,7 @@ void frmUdpServer::on_btnSend_clicked()
             sendData(list.at(0), list.at(1).toInt(), data);
         }
     } else {
-        int row = ui->listWidget->currentRow();
+        int row = ui->listWidget->row(ui->listWidget->selectedItems().first());
         if (row >= 0) {
             QString str = ui->listWidget->item(row)->text();
             QStringList list = str.split(":");
