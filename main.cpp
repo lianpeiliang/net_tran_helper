@@ -25,7 +25,7 @@ int main(int argc, char *argv[])
     App::readDeviceData();
 
     frmMain w;
-    w.setWindowTitle("网络调试助手");
+    w.setWindowTitle("通信调试助手");
     w.show();
 
     return a.exec();
