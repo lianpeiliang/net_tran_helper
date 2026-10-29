@@ -23,6 +23,8 @@ private:
     QTimer *timer;
     quint64 receivedBytes;
     quint64 sentBytes;
+    QHostAddress multicastGroup;
+    QNetworkInterface multicastInterface;
 
     void updateByteCounts();
 

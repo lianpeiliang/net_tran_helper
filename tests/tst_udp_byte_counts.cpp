@@ -210,6 +210,63 @@ private slots:
         QVERIFY(client.findChild<QLabel *>("labSendHint")->isHidden());
     }
 
+    void multicastLoopback()
+    {
+        QTemporaryDir settings;
+        App::ConfigFile = settings.filePath("test.ini");
+        frmUdpServer server;
+        QComboBox *listenIP = server.findChild<QComboBox *>("cboxListenIP");
+        int selected = -1;
+        for (int i = 0; i < listenIP->count(); ++i) {
+            if (listenIP->itemText(i) != "127.0.0.1") { selected = i; break; }
+        }
+        if (selected < 0) { QSKIP("No active non-loopback IPv4 interface available"); }
+        listenIP->setCurrentIndex(selected);
+        const QString localIP = listenIP->currentText();
+        QUdpSocket reservation;
+        QVERIFY(reservation.bind(QHostAddress::AnyIPv4, 0));
+        const quint16 port = reservation.localPort();
+        reservation.close();
+        server.findChild<QLineEdit *>("txtListenPort")->setText(QString::number(port));
+        server.findChild<QCheckBox *>("ckMulticast")->setChecked(true);
+        server.findChild<QLineEdit *>("txtMulticastGroup")->setText("239.255.0.1");
+        QPushButton *listen = server.findChild<QPushButton *>("btnListen");
+        listen->click();
+        QVERIFY2(!server.findChild<QLineEdit *>("txtMulticastGroup")->isEnabled(),
+                 qPrintable(server.findChild<QLabel *>("labSendHint")->text()));
+        frmUdpClient client;
+        QComboBox *source = client.findChild<QComboBox *>("cboxLocalIP");
+        const int sourceIndex = source->findData(localIP);
+        QVERIFY(sourceIndex > 0);
+        source->setCurrentIndex(sourceIndex);
+        QVERIFY(send(&client, "239.255.0.1", port, "group-test"));
+        QCOMPARE(count(&client, "labSentBytes"), quint64(10));
+        QTRY_COMPARE(count(&server, "labReceivedBytes"), quint64(10));
+        listen->click();
+        QCOMPARE(server.findChild<QUdpSocket *>()->state(), QAbstractSocket::UnconnectedState);
+        QVERIFY(server.findChild<QLineEdit *>("txtMulticastGroup")->isEnabled());
+        listen->click(); // Joining again after leaving must work.
+        QCOMPARE(server.findChild<QUdpSocket *>()->state(), QAbstractSocket::BoundState);
+        listen->click();
+    }
+
+    void multicastRejectsInvalidGroup()
+    {
+        QTemporaryDir settings;
+        App::ConfigFile = settings.filePath("test.ini");
+        frmUdpServer server;
+        server.findChild<QCheckBox *>("ckMulticast")->setChecked(true);
+        QLineEdit *group = server.findChild<QLineEdit *>("txtMulticastGroup");
+        const QStringList invalid = QStringList() << "127.0.0.1" << "garbage" << "ff02::1";
+        foreach (const QString &address, invalid) {
+            group->setText(address);
+            server.findChild<QPushButton *>("btnListen")->click();
+            QCOMPARE(server.findChild<QUdpSocket *>()->state(), QAbstractSocket::UnconnectedState);
+            QVERIFY(!server.findChild<QLabel *>("labSendHint")->isHidden());
+            QVERIFY(group->isEnabled());
+        }
+    }
+
     void serverMissingTarget()
     {
         QTemporaryDir settings;

@@ -262,13 +262,63 @@ void frmUdpServer::clientConnected(const QString &ip, int port)
 void frmUdpServer::on_btnListen_clicked()
 {
     if (ui->btnListen->text() == "监听") {
-        bool ok = udpSocket->bind(QHostAddress(App::UdpListenIP), App::UdpListenPort);
+        const bool multicast = ui->ckMulticast->isChecked();
+        const QHostAddress group(ui->txtMulticastGroup->text().trimmed());
+        QNetworkInterface iface;
+        if (multicast) {
+            if (group.protocol() != QAbstractSocket::IPv4Protocol || !group.isMulticast()) {
+                ui->labSendHint->setText(tr("请输入有效的 IPv4 组播地址（224.0.0.0–239.255.255.255）。"));
+                ui->labSendHint->show();
+                return;
+            }
+            foreach (const QNetworkInterface &candidate, QNetworkInterface::allInterfaces()) {
+                foreach (const QNetworkAddressEntry &entry, candidate.addressEntries()) {
+                    if (entry.ip() == QHostAddress(App::UdpListenIP)) {
+                        iface = candidate;
+                    }
+                }
+            }
+            if (!iface.isValid()) {
+                ui->labSendHint->setText(tr("找不到监听地址对应的网卡，请重新选择监听地址。"));
+                ui->labSendHint->show();
+                return;
+            }
+        }
+        bool ok = multicast
+                ? udpSocket->bind(QHostAddress::AnyIPv4, App::UdpListenPort,
+                                  QUdpSocket::ShareAddress | QUdpSocket::ReuseAddressHint)
+                : udpSocket->bind(QHostAddress(App::UdpListenIP), App::UdpListenPort);
+        if (ok && multicast) {
+            ok = udpSocket->joinMulticastGroup(group, iface);
+            if (ok) {
+                multicastGroup = group;
+                multicastInterface = iface;
+            }
+        }
         if (ok) {
+            ui->labSendHint->hide();
+            ui->ckMulticast->setEnabled(false);
+            ui->txtMulticastGroup->setEnabled(false);
+            ui->cboxListenIP->setEnabled(false);
+            ui->txtListenPort->setEnabled(false);
             ui->btnListen->setText("关闭");
-            append(0, "监听成功");
+            append(0, multicast ? tr("已加入组播 %1，网卡 %2").arg(group.toString()).arg(App::UdpListenIP) : tr("监听成功"));
+        } else {
+            const QString error = udpSocket->errorString();
+            udpSocket->abort();
+            ui->labSendHint->setText(tr("监听或加入组播失败：%1").arg(error));
+            ui->labSendHint->show();
         }
     } else {
+        if (!multicastGroup.isNull()) {
+            udpSocket->leaveMulticastGroup(multicastGroup, multicastInterface);
+            multicastGroup.clear();
+        }
         udpSocket->abort();
+        ui->ckMulticast->setEnabled(true);
+        ui->txtMulticastGroup->setEnabled(true);
+        ui->cboxListenIP->setEnabled(true);
+        ui->txtListenPort->setEnabled(true);
         ui->btnListen->setText("监听");
     }
 }

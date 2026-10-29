@@ -225,6 +225,29 @@ void frmUdpClient::sendData(const QString &ip, int port, const QString &data)
         return;
     }
     ui->labSendHint->hide();
+    if (destination.isMulticast()) {
+        if (destination.protocol() != QAbstractSocket::IPv4Protocol) {
+            ui->labSendHint->setText(tr("当前组播发送仅支持 IPv4 地址。"));
+            ui->labSendHint->show();
+            return;
+        }
+        QNetworkInterface iface;
+        foreach (const QNetworkInterface &candidate, QNetworkInterface::allInterfaces()) {
+            foreach (const QNetworkAddressEntry &entry, candidate.addressEntries()) {
+                if (entry.ip() == udpSocket->localAddress()) {
+                    iface = candidate;
+                }
+            }
+        }
+        if (!iface.isValid()) {
+            ui->labSendHint->setText(tr("无法确定组播出口网卡，请选择本地 IP。"));
+            ui->labSendHint->show();
+            return;
+        }
+        udpSocket->setMulticastInterface(iface);
+        udpSocket->setSocketOption(QAbstractSocket::MulticastTtlOption, 1);
+        udpSocket->setSocketOption(QAbstractSocket::MulticastLoopbackOption, 1);
+    }
     const qint64 bytesWritten = udpSocket->writeDatagram(buffer, destination, port);
     if (bytesWritten < 0) {
         ui->labSendHint->setText(tr("发送失败：%1").arg(udpSocket->errorString()));
