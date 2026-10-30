@@ -1,4 +1,4 @@
-# net_tran_helper
+# LinkScope · 通信调试助手
 
 基于 Qt 的通信调试助手，支持 TCP 客户端、TCP 服务端、UDP 客户端、UDP 服务端和串口收发。
 

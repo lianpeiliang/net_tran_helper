@@ -1,13 +1,13 @@
 ﻿#ifndef FRMMAIN_H
 #define FRMMAIN_H
 
-#include <QWidget>
+#include "framelesswindow.h"
 
 namespace Ui {
 class frmMain;
 }
 
-class frmMain : public QWidget
+class frmMain : public FramelessWindow
 {
     Q_OBJECT
 

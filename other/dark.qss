@@ -156,3 +156,14 @@ QToolTip { background: #18283d; color: #cee4f5; border: 1px solid #385570; paddi
 QPushButton#btnSend, QPushButton#btnListen, QPushButton#btnConnect, QTabBar::tab:selected { color: #ffffff; }
 QComboBox QAbstractItemView { background: #18283d; color: #d5e6f5; }
 QLabel#labSendHint { color: #ffbf69; }
+
+/* Custom window title bar */
+QFrame#brandHeader { background: qlineargradient(x1:0,y1:0,x2:1,y2:0,stop:0 #183650,stop:1 #111f35); border: none; }
+QFrame#brandHeader QLabel { color: white; background: transparent; }
+QLabel#brandTitle { font-size: 18px; font-weight: bold; }
+QLabel#brandSubtitle, QLabel#brandSeparator { color: #cde6ff; }
+QLabel#brandBadge { padding: 4px 10px; border: 1px solid #729cc6; border-radius: 4px; }
+QFrame#brandHeader QPushButton { background: transparent; border: none; border-radius: 3px; padding: 0; min-width: 0; min-height: 0; }
+QFrame#brandHeader QPushButton:hover { background: #5286b6; }
+QFrame#brandHeader QPushButton:pressed { background: #37688f; }
+QFrame#brandHeader QPushButton#closeWindowButton:hover { background: #e5484d; }

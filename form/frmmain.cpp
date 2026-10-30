@@ -3,9 +3,10 @@
 #include "quiwidget.h"
 #include "frmserial.h"
 
-frmMain::frmMain(QWidget *parent) : QWidget(parent), ui(new Ui::frmMain)
+frmMain::frmMain(QWidget *parent) : FramelessWindow(parent), ui(new Ui::frmMain)
 {
     ui->setupUi(this);
+    ui->verticalLayout->insertWidget(0, createTitleBar());
     ui->tabWidget->addTab(new frmSerial(this), tr("串口"));
     QSettings settings(App::ConfigFile, QSettings::IniFormat);
     const int themeIndex = settings.value("Appearance/Theme", "blue").toString() == "dark" ? 1 : 0;
