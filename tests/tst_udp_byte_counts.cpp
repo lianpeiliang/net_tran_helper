@@ -33,6 +33,94 @@ private slots:
         App::SelectAllUdpServer = false;
     }
 
+    void clientConfigurationRoundTrip()
+    {
+        QTemporaryDir settings;
+        App::ConfigFile = settings.filePath("test.ini");
+        frmUdpClient client;
+        QComboBox *data = client.findChild<QComboBox *>("cboxData");
+        QComboBox *local = client.findChild<QComboBox *>("cboxLocalIP");
+        QSpinBox *port = client.findChild<QSpinBox *>("spinLocalPort");
+        QLineEdit *remote = client.findChild<QLineEdit *>("txtServerIP");
+        QLineEdit *remotePort = client.findChild<QLineEdit *>("txtServerPort");
+        QCheckBox *hex = client.findChild<QCheckBox *>("ckHexSend");
+        QCheckBox *ascii = client.findChild<QCheckBox *>("ckAscii");
+        const QString payload = QString::fromUtf8("报文 \\\"\r\n00 FF");
+        data->setEditText(payload);
+        local->setCurrentIndex(local->findData("127.0.0.1"));
+        port->setValue(65535);
+        remote->setText("239.255.0.1");
+        remotePort->setText("12345");
+        hex->setChecked(true);
+        ascii->setChecked(true);
+        QString error;
+        const QString path = settings.filePath(QString::fromUtf8("配置.json"));
+        QVERIFY2(client.saveConfiguration(path, error), qPrintable(error));
+        QFile saved(path);
+        QVERIFY(saved.open(QIODevice::ReadOnly));
+        const QJsonObject config = QJsonDocument::fromJson(saved.readAll()).object();
+        saved.close();
+        QCOMPARE(config.value("data").toString(), payload);
+        QCOMPARE(config.value("localPort").toInt(), 65535);
+
+        data->setEditText("changed");
+        local->setCurrentIndex(0);
+        port->setValue(0);
+        remote->setText("127.0.0.1");
+        remotePort->setText("80");
+        hex->setChecked(false);
+        ascii->setChecked(false);
+        QVERIFY2(client.loadConfiguration(path, error), qPrintable(error));
+        QCOMPARE(data->currentText(), payload);
+        QCOMPARE(local->currentData().toString(), QString("127.0.0.1"));
+        QCOMPARE(port->value(), 65535);
+        QCOMPARE(remote->text(), QString("239.255.0.1"));
+        QCOMPARE(remotePort->text(), QString("12345"));
+        QVERIFY(hex->isChecked());
+        QVERIFY(ascii->isChecked());
+        QCOMPARE(App::UdpServerPort, 12345);
+        QCOMPARE(client.findChild<QUdpSocket *>()->state(), QAbstractSocket::UnconnectedState);
+        QCOMPARE(count(&client, "labSentBytes"), quint64(0));
+
+        // Invalid files must leave all current settings intact.
+        QList<QByteArray> invalid;
+        invalid << "{" << "[]" << "{}";
+        const QStringList keys = QStringList() << "remotePort" << "localPort" << "version" << "hexSend";
+        foreach (const QString &key, keys) {
+            QJsonObject broken = config;
+            broken.insert(key, key == "remotePort" ? QJsonValue(65536) :
+                          key == "localPort" ? QJsonValue(1.5) : QJsonValue("invalid"));
+            invalid << QJsonDocument(broken).toJson();
+        }
+        foreach (const QByteArray &json, invalid) {
+            QFile file(path);
+            QVERIFY(file.open(QIODevice::WriteOnly | QIODevice::Truncate));
+            QCOMPARE(file.write(json), qint64(json.size()));
+            file.close();
+            QVERIFY(!client.loadConfiguration(path, error));
+            QVERIFY(!error.isEmpty());
+            QCOMPARE(data->currentText(), payload);
+            QCOMPARE(port->value(), 65535);
+            QCOMPARE(remotePort->text(), QString("12345"));
+            QCOMPARE(App::UdpServerPort, 12345);
+        }
+        QVERIFY(!client.loadConfiguration(settings.filePath("missing.json"), error));
+        QVERIFY(!client.saveConfiguration(settings.filePath("missing/config.json"), error));
+
+        // Automatic address/port and an empty payload also survive export/import.
+        local->setCurrentIndex(0);
+        port->setValue(0);
+        data->setEditText("");
+        QVERIFY(client.saveConfiguration(path, error));
+        local->setCurrentIndex(local->findData("127.0.0.1"));
+        port->setValue(1234);
+        data->setEditText("changed");
+        QVERIFY(client.loadConfiguration(path, error));
+        QCOMPARE(local->currentIndex(), 0);
+        QCOMPARE(port->value(), 0);
+        QVERIFY(data->currentText().isEmpty());
+    }
+
     void counters_data()
     {
         QTest::addColumn<bool>("server");

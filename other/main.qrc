@@ -1,7 +1,7 @@
 <RCC>
     <qresource prefix="/">
         <file>blue.qss</file>
-        <file>dark.qss</file>
+
         <file>check.svg</file>
         <file>down.svg</file>
         <file>up.svg</file>

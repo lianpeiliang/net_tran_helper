@@ -16,6 +16,9 @@ public:
     explicit frmUdpClient(QWidget *parent = 0);
     ~frmUdpClient();
 
+    bool saveConfiguration(const QString &fileName, QString &error) const;
+    bool loadConfiguration(const QString &fileName, QString &error);
+
 private:
     Ui::frmUdpClient *ui;
 
@@ -38,6 +41,8 @@ private slots:
     void sendData(const QString &ip, int port, const QString &data);
 
 private slots:
+    void on_btnSaveConfig_clicked();
+    void on_btnImportConfig_clicked();
     void on_btnSave_clicked();
     void on_btnClear_clicked();
     void on_btnSend_clicked();

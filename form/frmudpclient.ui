@@ -142,9 +142,23 @@
        <widget class="QLineEdit" name="txtServerPort"/>
       </item>
       <item>
+       <widget class="QPushButton" name="btnSaveConfig">
+        <property name="text">
+         <string>保存配置</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QPushButton" name="btnImportConfig">
+        <property name="text">
+         <string>导入配置</string>
+        </property>
+       </widget>
+      </item>
+      <item>
        <widget class="QPushButton" name="btnSave">
         <property name="text">
-         <string>保存</string>
+         <string>保存日志</string>
         </property>
        </widget>
       </item>

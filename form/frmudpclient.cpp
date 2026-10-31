@@ -1,6 +1,12 @@
 ﻿#include "frmudpclient.h"
 #include "ui_frmudpclient.h"
 #include "quiwidget.h"
+#include <QFileDialog>
+#include <QJsonDocument>
+#include <QJsonObject>
+#include <QSaveFile>
+#include <QSignalBlocker>
+#include <QMessageBox>
 
 frmUdpClient::frmUdpClient(QWidget *parent) : QWidget(parent), ui(new Ui::frmUdpClient)
 {
@@ -336,6 +342,136 @@ void frmUdpClient::on_btnResetCounts_clicked()
     receivedBytes = 0;
     sentBytes = 0;
     updateByteCounts();
+}
+
+bool frmUdpClient::saveConfiguration(const QString &fileName, QString &error) const
+{
+    error.clear();
+    bool validPort = false;
+    const int remotePort = ui->txtServerPort->text().trimmed().toInt(&validPort);
+    const QString remoteAddress = ui->txtServerIP->text().trimmed();
+    if (!validPort || remotePort < 1 || remotePort > 65535 || QHostAddress(remoteAddress).isNull()) {
+        error = tr("请输入有效的远程 IP 和端口（1-65535）后再保存配置。");
+        return false;
+    }
+
+    QJsonObject config;
+    config.insert("type", "udp-client");
+    config.insert("version", 1);
+    config.insert("data", ui->cboxData->currentText());
+    config.insert("localIP", ui->cboxLocalIP->currentData().toString());
+    config.insert("localPort", ui->spinLocalPort->value());
+    config.insert("remoteAddress", remoteAddress);
+    config.insert("remotePort", remotePort);
+    config.insert("hexSend", ui->ckHexSend->isChecked());
+    config.insert("ascii", ui->ckAscii->isChecked());
+
+    QSaveFile file(fileName);
+    if (!file.open(QIODevice::WriteOnly)) {
+        error = tr("无法保存配置：%1").arg(file.errorString());
+        return false;
+    }
+    const QByteArray json = QJsonDocument(config).toJson(QJsonDocument::Indented);
+    if (file.write(json) != json.size() || !file.commit()) {
+        error = tr("无法保存配置：%1").arg(file.errorString());
+        return false;
+    }
+    return true;
+}
+
+bool frmUdpClient::loadConfiguration(const QString &fileName, QString &error)
+{
+    error.clear();
+    QFile file(fileName);
+    if (!file.open(QIODevice::ReadOnly)) {
+        error = tr("无法读取配置：%1").arg(file.errorString());
+        return false;
+    }
+    QJsonParseError parseError;
+    const QJsonDocument document = QJsonDocument::fromJson(file.readAll(), &parseError);
+    if (parseError.error != QJsonParseError::NoError || !document.isObject()) {
+        error = tr("配置文件不是有效的 JSON 对象：%1").arg(parseError.errorString());
+        return false;
+    }
+    const QJsonObject config = document.object();
+    const QJsonValue localPort = config.value("localPort");
+    const QJsonValue remotePort = config.value("remotePort");
+    const QString localIP = config.value("localIP").toString();
+    const QString remoteAddress = config.value("remoteAddress").toString();
+    if (config.value("type").toString() != "udp-client" ||
+            config.value("version").toDouble(-1) != 1 ||
+            !config.value("data").isString() || !config.value("localIP").isString() ||
+            !config.value("remoteAddress").isString() ||
+            !localPort.isDouble() || localPort.toInt(-1) < 0 || localPort.toInt(-1) > 65535 ||
+            localPort.toDouble() != localPort.toInt(-1) ||
+            !remotePort.isDouble() || remotePort.toInt(-1) < 1 || remotePort.toInt(-1) > 65535 ||
+            remotePort.toDouble() != remotePort.toInt(-1) ||
+            (!localIP.isEmpty() && QHostAddress(localIP).isNull()) ||
+            QHostAddress(remoteAddress).isNull() ||
+            !config.value("hexSend").isBool() || !config.value("ascii").isBool()) {
+        error = tr("配置格式不正确或版本不支持，请选择由 UDP 客户端导出的配置文件。");
+        return false;
+    }
+
+    // Validate everything before changing widgets or their persisted settings.
+    {
+        const QSignalBlocker localBlocker(ui->cboxLocalIP);
+        const QSignalBlocker portBlocker(ui->spinLocalPort);
+        const QSignalBlocker remoteBlocker(ui->txtServerIP);
+        const QSignalBlocker remotePortBlocker(ui->txtServerPort);
+        const QSignalBlocker hexBlocker(ui->ckHexSend);
+        const QSignalBlocker asciiBlocker(ui->ckAscii);
+        int index = ui->cboxLocalIP->findData(localIP);
+        if (index < 0) {
+            // Preserve a saved address even when its network adapter is currently unavailable.
+            ui->cboxLocalIP->addItem(localIP, localIP);
+            index = ui->cboxLocalIP->count() - 1;
+        }
+        ui->cboxLocalIP->setCurrentIndex(index);
+        ui->spinLocalPort->setValue(localPort.toInt());
+        ui->txtServerIP->setText(remoteAddress);
+        ui->txtServerPort->setText(QString::number(remotePort.toInt()));
+        ui->cboxData->setEditText(config.value("data").toString());
+        ui->ckHexSend->setChecked(config.value("hexSend").toBool());
+        ui->ckAscii->setChecked(config.value("ascii").toBool());
+    }
+    on_cboxLocalIP_currentIndexChanged(ui->cboxLocalIP->currentIndex());
+    saveConfig();
+    return true;
+}
+
+void frmUdpClient::on_btnSaveConfig_clicked()
+{
+    QString fileName = QFileDialog::getSaveFileName(this, tr("保存 UDP 客户端配置"),
+                                                   "udp_client.json", tr("JSON 配置 (*.json)"));
+    if (fileName.isEmpty()) {
+        return;
+    }
+    if (!fileName.endsWith(".json", Qt::CaseInsensitive)) {
+        fileName += ".json";
+        if (QFile::exists(fileName) && QMessageBox::question(this, tr("覆盖配置"),
+                tr("文件已存在，是否覆盖？"), QMessageBox::Yes | QMessageBox::No,
+                QMessageBox::No) != QMessageBox::Yes) {
+            return;
+        }
+    }
+    QString error;
+    if (!saveConfiguration(fileName, error)) {
+        QMessageBox::warning(this, tr("保存配置失败"), error);
+    }
+}
+
+void frmUdpClient::on_btnImportConfig_clicked()
+{
+    const QString fileName = QFileDialog::getOpenFileName(this, tr("导入 UDP 客户端配置"),
+                                                        QString(), tr("JSON 配置 (*.json)"));
+    if (fileName.isEmpty()) {
+        return;
+    }
+    QString error;
+    if (!loadConfiguration(fileName, error)) {
+        QMessageBox::warning(this, tr("导入配置失败"), error);
+    }
 }
 
 void frmUdpClient::on_btnSave_clicked()

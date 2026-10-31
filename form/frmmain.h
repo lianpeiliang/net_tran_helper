@@ -1,4 +1,4 @@
-﻿#ifndef FRMMAIN_H
+#ifndef FRMMAIN_H
 #define FRMMAIN_H
 
 #include "framelesswindow.h"
@@ -17,7 +17,7 @@ public:
 
 private slots:
     void on_tabWidget_currentChanged(int index);
-    void on_cboxTheme_currentIndexChanged(int index);
+
 
 private:
     Ui::frmMain *ui;
